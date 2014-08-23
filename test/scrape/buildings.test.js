@@ -2,7 +2,7 @@ var assert = require('assert')
 
 var buildings = require('../../server/scrape/buildings')
 
-describe('store/buildings', function () {
+describe('scrape/buildings', function () {
   describe('pk', function () {
     var pk = buildings.pk
 
