@@ -1,0 +1,100 @@
+#!/usr/bin/env node
+
+var CONCURRENCY = 3
+
+// Scrape all accounts from august 14th to 16th.
+//
+//   $ bin/scrape --from 2014-08-14 --to 2014-08-16
+//
+// Scrape accounts 113955 and 111590 from may 22nd to 29th. 
+//
+//   $ bin/scrape 113955 111590 --from 2014-05-22
+//
+// Scrape all accounts for past full week.
+//
+//   $ bin/scrape
+
+var env = process.env['NODE_ENV']
+if (env != 'production') {
+  require('dotenv').load()
+}
+
+// dependencies
+
+var moment = require('moment')
+var async = require('async')
+var minimist = require('minimist')
+
+// libs
+
+var scrape = require('../server/scrape/index')
+var mongodb = require('../server/mongodb')
+
+// setup
+
+var options = {}
+var args = minimist(process.argv.slice(2))
+
+if (args.from) {
+  options.from = moment(args.from, 'YYYY-MM-DD')
+} else {
+  options.from = moment().startOf('week').subtract(1, 'week')
+}
+
+if (args.to) {
+  options.to = moment(args.to, 'YYYY-MM-DD')
+} else {
+  options.to = moment(options.from).add(6, 'days')
+}
+
+if (options.to.toDate() > (new Date)) {
+  options.to = moment(new Date)
+}
+
+// run
+
+var ids = []
+var errors = []
+
+var q = async.queue(function (accountId, cb) {
+  if (!accountId) { return cb() }
+  scrape(accountId, options, cb)
+}, CONCURRENCY)
+
+q.drain = done
+
+if (args._.length > 0) {
+  args._.forEach(push)
+} else {
+  mongodb.buildings.distinct('accountIds', function (e, ids) {
+    if (e) {
+      console.error(e)
+      process.exit(1)
+    }
+    ids.forEach(push)
+  })
+}
+
+function done () {
+  console.error('\n%d accounts processed for %s to %s.', ids.length,
+      options.from.format('YYYY-MM-DD'), options.to.format('YYYY-MM-DD'))
+  if (errors.length) {
+    console.error('%d errors occurred.', errors.length)
+    errors.forEach(function (e) {
+      console.error(' - %d', e.account)
+    })
+    process.exit(1)
+  } else {
+    process.exit(0)
+  }
+}
+
+function push (id) {
+  ids.push(id)
+  q.push(id, function (e) {
+    if (e) {
+      e.account = id
+      errors.push(e)
+    }
+  })
+}
