@@ -1,0 +1,86 @@
+#!/usr/bin/env node
+
+var CONCURRENCY = 10
+
+// Calculate the pct change for each building 
+
+var env = process.env['NODE_ENV']
+if (env != 'production') {
+  require('dotenv').load()
+}
+
+// dependencies
+
+var moment = require('moment')
+var async = require('async')
+var merge = require('lodash').merge
+
+// libs
+
+var mongodb = require('../server/mongodb')
+var dailysums = require('../server/calculate/dailysums')
+
+// setup
+
+var date = new Date
+var unit = 'month'
+
+var thisWeek = {
+  $gt: moment(date).startOf(unit).subtract(1, unit).toDate(),
+  $lte: moment(date).startOf(unit).toDate(),
+}
+
+var lastWeek = {
+  $gt: moment(date).startOf(unit).subtract(2, unit).toDate(),
+  $lte: moment(date).startOf(unit).subtract(1, unit).toDate(),
+}
+
+// run
+
+var count = 0
+var errors = []
+
+var q = async.queue(function (building, cb) {
+  count ++
+
+  if (!building.accountIds) { return cb(null) }
+
+  var query = { accountId: { $in: building.accountIds } }
+  var currQuery = merge({ date: thisWeek }, query)
+  var prevQuery = merge({ date: lastWeek }, query)
+
+  dailysums.pctChange(currQuery, prevQuery, function (e, stats) {
+    if (e) {
+      console.error(e)
+      e.buildingId = building.id
+      errors.push(e)
+      return cb(e)
+    }
+
+    mongodb.buildings.update(
+      { id: building.id },
+      { $set: { pct: stats.total } },
+      { multi: false },
+      cb
+    )
+  })
+}, CONCURRENCY)
+
+q.drain = function () {
+  console.log('\n%d buildings processed', count)
+  if (errors.length) {
+    console.error('%d errors occured', errors.length)
+    errors.forEach(function (error) {
+      console.error(' - %s', error.buildingId)
+    })
+    process.exit(1)
+  } else {
+    process.exit(0)
+  }
+}
+
+var cursor = mongodb.buildings.find({})
+cursor.forEach(function (e, building) {
+  if (e || !building) { return }
+  q.push(building)
+})

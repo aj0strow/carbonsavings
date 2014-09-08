@@ -54,6 +54,7 @@ location
   state (string)
   stateCode (string)
 accountIds (array : string)
+pct (float)
 ```
 
 #### dailysums

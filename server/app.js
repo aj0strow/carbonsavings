@@ -1,12 +1,18 @@
+// dependencies
+
 var express = require('express')
 var morgan = require('morgan')
 
+// exports
+
 var app = express()
+module.exports = app
+
+// settings
 
 app.disable('x-powered-by')
 app.use(morgan('dev'))
-app.use(express.static(__dirname + '/../app'))
 
-app.get('/buildings', require('./routes/buildings'))
+// routes
 
-module.exports = app
+app.use(require('./routes/buildings'))
