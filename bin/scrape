@@ -55,7 +55,9 @@ if (options.to.toDate() > (new Date)) {
   options.to = moment(new Date)
 }
 
-if (!options.n) {
+if (args.n) {
+  options.n = +(args.n)
+} else {
   options.n = 1
 }
 
