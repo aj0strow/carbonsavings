@@ -80,9 +80,8 @@ function done () {
       options.from.format('YYYY-MM-DD'), options.to.format('YYYY-MM-DD'))
   if (errors.length) {
     console.error('%d errors occurred.', errors.length)
-    errors.forEach(function (e) {
-      console.error(' - %d', e.account)
-    })
+    var accounts = errors.map(function (e) { return e.account })
+    console.error(accounts.join(' '))
     process.exit(1)
   } else {
     process.exit(0)
