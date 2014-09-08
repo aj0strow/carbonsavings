@@ -13,6 +13,10 @@ var CONCURRENCY = 3
 // Scrape all accounts for past full week.
 //
 //   $ bin/scrape
+//
+// Scrape and retry 5 times.
+//
+//   $ bin/scrape -n 5
 
 var env = process.env['NODE_ENV']
 if (env != 'production') {
@@ -51,17 +55,47 @@ if (options.to.toDate() > (new Date)) {
   options.to = moment(new Date)
 }
 
+if (!options.n) {
+  options.n = 1
+}
+
 // run
 
-var ids = []
+var count = 0
 var errors = []
 
 var q = async.queue(function (accountId, cb) {
   if (!accountId) { return cb() }
+  count ++
   scrape(accountId, options, cb)
 }, CONCURRENCY)
 
-q.drain = done
+q.drain = function () {
+  options.n -= 1
+
+  console.error('\n%d accounts processed %s to %s.', count,
+    options.from.format('YYYY-MM-DD'),  options.to.format('YYYY-MM-DD'))
+
+  if (errors.length) {
+    console.error('%d errors occurred.', errors.length)
+    console.error(errors.join(' '))
+    
+    if (options.n > 0) {
+      errors.forEach(push)
+      errors.length = 0
+    } else {
+      process.exit(1)
+    }
+  } else {
+    process.exit(0)
+  }
+}
+
+function push (accountId) {
+  q.push(accountId, function (e) {
+    if (e) { errors.push(accountId) }
+  })
+}
 
 if (args._.length > 0) {
   args._.forEach(push)
@@ -72,28 +106,5 @@ if (args._.length > 0) {
       process.exit(1)
     }
     ids.forEach(push)
-  })
-}
-
-function done () {
-  console.error('\n%d accounts processed for %s to %s.', ids.length,
-      options.from.format('YYYY-MM-DD'), options.to.format('YYYY-MM-DD'))
-  if (errors.length) {
-    console.error('%d errors occurred.', errors.length)
-    var accounts = errors.map(function (e) { return e.account })
-    console.error(accounts.join(' '))
-    process.exit(1)
-  } else {
-    process.exit(0)
-  }
-}
-
-function push (id) {
-  ids.push(id)
-  q.push(id, function (e) {
-    if (e) {
-      e.account = id
-      errors.push(e)
-    }
   })
 }

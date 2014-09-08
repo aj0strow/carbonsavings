@@ -50,12 +50,7 @@ var q = async.queue(function (building, cb) {
   var prevQuery = merge({ date: lastWeek }, query)
 
   dailysums.pctChange(currQuery, prevQuery, function (e, stats) {
-    if (e) {
-      console.error(e)
-      e.buildingId = building.id
-      errors.push(e)
-      return cb(e)
-    }
+    if (e) { return cb(e) }
 
     mongodb.buildings.update(
       { id: building.id },
@@ -67,12 +62,9 @@ var q = async.queue(function (building, cb) {
 }, CONCURRENCY)
 
 q.drain = function () {
-  console.log('\n%d buildings processed', count)
+  console.log('\n%d buildings processed.', count)
   if (errors.length) {
-    console.error('%d errors occured', errors.length)
-    errors.forEach(function (error) {
-      console.error(' - %s', error.buildingId)
-    })
+    console.error('%d errors occured.', errors.length)
     process.exit(1)
   } else {
     process.exit(0)
@@ -82,5 +74,10 @@ q.drain = function () {
 var cursor = mongodb.buildings.find({})
 cursor.forEach(function (e, building) {
   if (e || !building) { return }
-  q.push(building)
+  q.push(building, function (e) {
+    if (e) {
+      console.error(e)
+      errors.push(building.id)
+    }
+  })
 })
