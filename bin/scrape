@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var CONCURRENCY = 3
+var RUNS = 1
 
 // Scrape all accounts from august 14th to 16th.
 //
@@ -8,7 +9,7 @@ var CONCURRENCY = 3
 //
 // Scrape accounts 113955 and 111590 from may 22nd to 29th. 
 //
-//   $ bin/scrape 113955 111590 --from 2014-05-22
+//   $ bin/scrape --from 2014-05-22 113955 111590
 //
 // Scrape all accounts for past full week.
 //
@@ -17,6 +18,13 @@ var CONCURRENCY = 3
 // Scrape and retry 5 times.
 //
 //   $ bin/scrape -n 5
+//
+// Scrape 7 at a time.
+//
+//   $ bin/scrape -c 7
+//
+// The output the script are the ids that failed, which makes it easy
+// to retry them manually.
 
 var env = process.env['NODE_ENV']
 if (env != 'production') {
@@ -58,7 +66,13 @@ if (options.to.toDate() > (new Date)) {
 if (args.n) {
   options.n = +(args.n)
 } else {
-  options.n = 1
+  options.n = RUNS
+}
+
+if (args.c) {
+  options.c = +(args.c)
+} else {
+  options.c = CONCURRENCY
 }
 
 // run
@@ -70,7 +84,7 @@ var q = async.queue(function (accountId, cb) {
   if (!accountId) { return cb() }
   count ++
   scrape(accountId, options, cb)
-}, CONCURRENCY)
+}, options.c)
 
 q.drain = function () {
   options.n -= 1
@@ -81,15 +95,21 @@ q.drain = function () {
   if (errors.length) {
     console.error('%d errors occurred.', errors.length)
     console.error(errors.join(' '))
-    
+
     if (options.n > 0) {
-      errors.forEach(push)
-      errors.length = 0
+      setTimeout(retry, 500)  
     } else {
       process.exit(1)
     }
   } else {
     process.exit(0)
+  }
+}
+
+function retry () {
+  count = 0
+  while (errors.length) {
+    push(errors.pop())
   }
 }
 
