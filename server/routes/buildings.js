@@ -47,10 +47,17 @@ function present (building) {
   json.imageThumbnail = building.images.small
   json.imageLarge = building.images.large
 
+  var pct = 
+
   json.savings = {
     fiveYear: 164200,
-    lastMonth: + building.pct.toFixed(2),
+    lastMonth: round(building.pct),
   }
 
   return json
+}
+
+function round (number) {
+  if (!number) { return 0 }
+  return +number.toFixed(2)
 }
