@@ -2,6 +2,7 @@
 
 var express = require('express')
 var morgan = require('morgan')
+var cors = require('cors')
 
 // exports
 
@@ -12,6 +13,7 @@ module.exports = app
 
 app.disable('x-powered-by')
 app.use(morgan('dev'))
+app.use(cors())
 
 // routes
 
