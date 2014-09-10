@@ -18,7 +18,10 @@ module.exports = app
 app.get('/buildings', function (req, res, next) {
   mongodb.buildings.find(function (e, objects) {
     if (e) { return next(e) }
-    res.json(objects.map(present))
+    res.json({
+      buildings: objects.map(partial),
+      savings: 164200,
+    })
   })
 })
 
@@ -26,34 +29,34 @@ app.get('/building/:id', function (req, res, next) {
   var query = { id: req.params.id }
   mongodb.buildings.findOne(query, function (e, object) {
     if (e) { return next(e) }
-    res.json(present(object))
+    res.json(full(object))
   })
 })
 
 // helpers
 
-function present (building) {
-  var loc = building.location
+function full (building) {
+  var json = partial(building)
+  merge(json, pick(building, 'name', 'description'))
+    
+  var location = building.location
+  json.address = pick(location, 'streetName', 'streetNumber', 'city', 'country')
+  merge(json.address, { postalCode: location.zipcode, province: location.state })
 
-  var json = pick(building, 'id', 'name', 'description', 'url')
-  json.coordinates = pick(loc, 'latitude', 'longitude')
+  var images = building.images
+  json.imageThumbnail = images.small
+  json.imageLarge = images.large
 
-  // Oh Cananda, our home and native land ..
-  json.address = merge({
-    postalCode: loc.zipcode,
-    province: loc.state,
-  }, pick(loc, 'streetName', 'streetNumber', 'city', 'country'))
+  return json
+}
 
-  json.imageThumbnail = building.images.small
-  json.imageLarge = building.images.large
-
-  var pct = 
-
+function partial (building) {
+  var json = pick(building, 'id')
+  json.coordinates = pick(building.location, 'latitude', 'longitude')
   json.savings = {
     fiveYear: 164200,
     lastMonth: round(building.pct),
   }
-
   return json
 }
 

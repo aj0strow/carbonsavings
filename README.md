@@ -1,6 +1,37 @@
 # Carbon Savings
 
-The API for the energy map project. 
+API for the energy map project. 
+
+### API
+
+```
+GET carbonsavings.herokuapp.com/buildings
+
+{
+  buildings: [ {building} ],
+  savings: 50308
+}
+```
+
+All origins allowed. The savings is the dollar amount of savings for the last five years. 
+
+```
+GET carbonsavings.herokuapp.com/building/:id
+
+{
+  id: "29-nelson-st",
+  name: "29 Nelson Street",
+  description: "6 Bedroom Non Meal Plan House which includes: 1 - Small, 2 - Medium (1 - Medium is a Fire Escape Room), 2 - Large, and 1 - Jumbo, 2 - Bathrooms, 1 - Kitchen.",
+  imageThumnal: "http://www.studenthousingkingston.ca/default/cache/file/13B9F7F8-07F7-4768-A8817C6FE8B93633_small.jpg",
+  imageLarge: "http://www.studenthousingkingston.ca/default/cache/file/13B9F7F8-07F7-4768-A8817C6FE8B93633_medium.jpg",
+  address: {address},
+  coordinates: {coords},
+  savings: {
+    fiveYear: 50308,
+    lastMonth: 0.52
+  }
+}
+```
 
 ### Environment
 
