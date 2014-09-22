@@ -23,7 +23,7 @@ var dailysums = require('../server/calculate/dailysums')
 // setup
 
 var date = new Date
-var unit = 'month'
+var unit = 'week'
 
 var thisWeek = {
   $gt: moment(date).startOf(unit).subtract(1, unit).toDate(),
