@@ -6,7 +6,6 @@ var webscrape = require('utilitieskingston')(username, password)
 var parse = require('csv').parse
 
 var dailysums = require('./dailysums')
-var hourlysums = require('./hourlysums')
 
 module.exports = scrape
 
@@ -24,17 +23,7 @@ function scrape (accountId, options, cb) {
     },
 
     function (data, cb) {
-      async.parallel({
-
-        daily: function (cb) {
-          dailysums.batch(accountId, data, cb)
-        },
-
-        hourly: function (cb) {
-          hourlysums.batch(accountId, data, cb)
-        },
-
-      }, cb)
+      dailysums.batch(accountId, data, cb)
     },
   ], cb)
 }

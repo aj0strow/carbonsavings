@@ -38,7 +38,6 @@ GET carbonsavings.herokuapp.com/building/:id
 Put the following environment variables in a `.env` file.
 
 * `MONGOLAB_URI` the mongodb url
-* `TEMPODB_KEY` and `TEMPODB_SECRET` the keys for the tempodb api. 
 * `UTILITIESKINGSTON_USERNAME` and `UTILITIESKINGSTON_PASSWORD` the email and password for the utilities kingston green button data portal. 
 
 ### Scraping
